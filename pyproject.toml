@@ -1,0 +1,14 @@
+[project]
+name = "music-neurofeedback"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "pedalboard>=0.9.23",
+    "python-osc>=1.10.2",
+    "sounddevice>=0.5.5",
+    "soundfile>=0.13.1",
+    "streamlit>=1.57.0",
+    "yt-dlp>=2026.3.17",
+]
