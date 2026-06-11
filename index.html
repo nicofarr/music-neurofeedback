@@ -16,7 +16,7 @@
     button { background: #333; color: #eee; border: 1px solid #555; padding: 6px 14px; cursor: pointer; border-radius: 4px; }
     button:hover { background: #444; }
     #save-status { color: #4caf50; margin-top: 8px; font-size: 13px; }
-    #eeg-wet-level { color: #aaa; font-size: 13px; margin-bottom: 8px; }
+    
   </style>
 </head>
 <body>
@@ -42,11 +42,11 @@
 <div class="row">
   <div class="col">
     <!--
+    <div id="eeg-wet-level">EEG Wet Level: —</div>
+    -->
     <label>Wet level — <span id="wet-val">0.33</span></label>
     <input type="range" min="0" max="1" step="0.01" value="0.33" id="wet-level"
            oninput="updateSlider('wet_level', this)">
-    -->
-    <div id="eeg-wet-level">EEG Wet Level: —</div>
   </div>
   <div class="col">
     <label>Dry level — <span id="dry-val">0.40</span></label>
@@ -173,7 +173,7 @@
     document.getElementById("cursor").setAttribute("cx", cursorX);
 
     // Label room size
-    document.getElementById("eeg-wet-level").textContent = `EEG Wet level: ${ratio.toFixed(3)}`;
+    // document.getElementById("eeg-wet-level").textContent = `EEG Wet level: ${ratio.toFixed(3)}`;
   };
 
   ws.onerror = function() {

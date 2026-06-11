@@ -33,6 +33,7 @@ params = {
     "dry_level":   0.4,
     "width":       1.0,
     "freeze_mode": 0.0,
+    "volume":      1.0,
 }
 
 # ── Audio loading ─────────────────────────────────────────────────────────────
@@ -83,6 +84,7 @@ def play(data, sr):
         # Without it pedalboard resets its internal delay lines every call
         # and the wet signal is always zero.
         processed = board(chunk.T, sr, reset=False).T[:frames]
+        processed = processed * p["volume"]
         outdata[:] = processed
         pos[0] += frames
 

@@ -106,7 +106,7 @@ class EEG_signal_processing:
                 alpha = 0.1
                 
                 self.smoothed_ratio = (alpha * self.n_ratio + (1 - alpha) * self.smoothed_ratio)
-                self.osc.send_message("/reverb/wet_level", float(self.smoothed_ratio))
+                self.osc.send_message("/reverb/volume", float(self.smoothed_ratio))
                 self.data.append([self.alpha, self.beta, z_ratio, self.smoothed_ratio])
                 #print(self.smoothed_ratio)
 
