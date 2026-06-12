@@ -1,13 +1,13 @@
 # reverb-player
 
-Real-time audio player with a live reverb effect controllable via OSC. Feed it a WAV file or a YouTube URL; shape the reverb from a Streamlit GUI in a second terminal.
+Real-time audio player with a live reverb effect controllable via OSC. Feed it a WAV file or a YouTube URL; shape the reverb from a GUI in a second terminal. Volume controled by EEG signal.
 
 ## Files
 
 | File | Purpose |
 |---|---|
 | `player.py` | Plays audio, listens for OSC, applies reverb |
-| `control.py` | Streamlit GUI — sliders send OSC to the player |
+| `main.py` | Sliders send OSC to the player, graphs of EEG signal |
 
 ## Install
 With uv 
@@ -21,7 +21,6 @@ with pip
 ```bash
 pip install sounddevice soundfile pedalboard python-osc
 pip install yt-dlp          # or: brew install yt-dlp
-pip install streamlit       # for control.py only
 ```
 
 ## Usage
@@ -35,10 +34,10 @@ python player.py "https://youtu.be/dQw4w9WgXcQ"
 
 **Terminal 2 — start the controller:**
 ```bash
-streamlit run control.py
+python main.py
 ```
 
-Open the Streamlit URL (default `http://localhost:8501`) and move the sliders. Changes take effect within the next audio block (~23 ms).
+URL is opened by program (default `http://localhost:8501`), move the sliders to adjust reverb. Changes take effect within the next audio block (~23 ms).
 
 ## OSC API
 
