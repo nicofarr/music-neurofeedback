@@ -8,8 +8,16 @@ Run:      streamlit run control.py
 
 import streamlit as st
 from pythonosc.udp_client import SimpleUDPClient
+from EEG import EEG_signal_processing
+#from streamlit_autorefresh import st_autorefresh
+
+if "signal" not in st.session_state:
+    st.session_state.signal = EEG_signal_processing()
+    st.session_state.signal.start()
+signal = st.session_state.signal
 
 st.set_page_config(page_title="Reverb Control", page_icon="🎛️", layout="centered")
+#st_autorefresh(interval=1000, key="eegrefresh")
 
 st.title("🎛️  Reverb Controller")
 st.caption("All sliders send OSC to `player.py` on every change")
@@ -69,11 +77,14 @@ send("dry_level", dry_level)
 st.subheader("Character")
 cc1, cc2 = st.columns(2)
 
-room_size = cc1.slider(
-    "Room size", 0.0, 1.0,
-    st.session_state.get("room_size", 0.5), step=0.01, key="room_size",
-    help="Size of the virtual room — larger = longer reverb tail",
-)
+#room_size = cc1.slider(
+#    "Room size", 0.0, 1.0,
+#    st.session_state.get("room_size", 0.5), step=0.01, key="room_size",
+#    help="Size of the virtual room — larger = longer reverb tail",
+#)
+
+cc1.metric("EEG Room Size", f"{signal.smoothed_ratio:.3f}")
+
 damping = cc2.slider(
     "Damping", 0.0, 1.0,
     st.session_state.get("damping", 0.5), step=0.01, key="damping",
@@ -91,13 +102,19 @@ freeze_mode = cc2.slider(
     help="Freeze reverb tail (1.0 = infinite sustain, no new input)",
 )
 
-send("room_size", room_size)
+#send("room_size", room_size)
 send("damping",   damping)
 send("width",     width)
 send("freeze_mode", freeze_mode)
 
 # ── Status ────────────────────────────────────────────────────────────────────
 st.divider()
+
+if st.button("💾 Save EEG data"):
+    signal.save_data()
+    st.success("Datos guardados!")
+
+
 st.caption(
     f"Sending to `{host}:{port}` — addresses: "
     + "  |  ".join(f"`{base}/{k}`" for k in

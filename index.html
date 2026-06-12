@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <title>🎛️ Reverb Controller</title>
+  <style>
+    body { font-family: sans-serif; background: #111; color: #eee; max-width: 800px; margin: auto; padding: 20px; }
+    h1 { margin-bottom: 4px; }
+    hr { border-color: #333; margin: 20px 0; }
+    h3 { margin-bottom: 8px; }
+    .row { display: flex; gap: 40px; }
+    .col { flex: 1; }
+    label { display: block; margin-bottom: 4px; font-size: 13px; color: #aaa; }
+    input[type=range] { width: 100%; margin-bottom: 20px; }
+    .presets { display: flex; gap: 8px; flex-wrap: wrap; }
+    button { background: #333; color: #eee; border: 1px solid #555; padding: 6px 14px; cursor: pointer; border-radius: 4px; }
+    button:hover { background: #444; }
+    #save-status { color: #4caf50; margin-top: 8px; font-size: 13px; }
+    
+  </style>
+</head>
+<body>
+
+<h1>🎛️ Reverb Controller</h1>
+<p style="color:#666; font-size:13px">All sliders send OSC to player.py on every change</p>
+
+<hr>
+
+<!-- Presets -->
+<div class="presets">
+  <button onclick="applyPreset('Dry')">Dry</button>
+  <button onclick="applyPreset('Room')">Room</button>
+  <button onclick="applyPreset('Hall')">Hall</button>
+  <button onclick="applyPreset('Cathedral')">Cathedral</button>
+  <button onclick="applyPreset('Infinite')">Infinite</button>
+</div>
+
+<hr>
+
+<!-- Levels -->
+<h3>Levels</h3>
+<div class="row">
+  <div class="col">
+    <!--
+    <div id="eeg-wet-level">EEG Wet Level: —</div>
+    -->
+    <label>Wet level — <span id="wet-val">0.33</span></label>
+    <input type="range" min="0" max="1" step="0.01" value="0.33" id="wet-level"
+           oninput="updateSlider('wet_level', this)">
+  </div>
+  <div class="col">
+    <label>Dry level — <span id="dry-val">0.40</span></label>
+    <input type="range" min="0" max="1" step="0.01" value="0.40" id="dry-level"
+           oninput="updateSlider('dry_level', this)">
+  </div>
+</div>
+
+<!-- Character -->
+<h3>Character</h3>
+<div class="row">
+  <div class="col">
+    <!-- <div id="eeg-room-size">EEG Room Size: —</div> -->
+    <label>Room size — <span id="room-val">0.50</span></label>
+    <input type="range" min="0" max="1" step="0.01" value="0.50" id="room-size"
+           oninput="updateSlider('room_size', this)">
+    <label>Width — <span id="width-val">1.00</span></label>
+    <input type="range" min="0" max="1" step="0.01" value="1.00" id="width"
+           oninput="updateSlider('width', this)">
+  </div>
+  <div class="col">
+    <label>Damping — <span id="damping-val">0.50</span></label>
+    <input type="range" min="0" max="1" step="0.01" value="0.50" id="damping"
+           oninput="updateSlider('damping', this)">
+    <label>Freeze mode — <span id="freeze-val">0.00</span></label>
+    <input type="range" min="0" max="1" step="0.01" value="0.00" id="freeze-mode"
+           oninput="updateSlider('freeze_mode', this)">
+  </div>
+</div>
+
+<hr>
+
+<!-- EEG Monitor -->
+<h3>EEG Monitor</h3>
+<svg id="eeg-svg" width="100%" viewBox="0 0 800 200" xmlns="http://www.w3.org/2000/svg">
+  <text x="50"  y="20" fill="white" font-size="13">Alpha</text>
+  <text x="750" y="20" fill="white" font-size="13" text-anchor="end">Beta</text>
+  <rect id="bar-alpha" x="50" y="30" width="350" height="50" fill="#e594f7"/>
+  <rect id="bar-beta"  x="400" y="30" width="350" height="50" fill="#dbf794"/>
+  <text x="400" y="100" fill="white" font-size="16" text-anchor="middle">Relative Alpha/Beta Power</text>
+  <rect x="50" y="30" width="700" height="50" fill="none" stroke="white" stroke-width="2"/>
+  <text x="50"  y="120" fill="white" font-size="12">0</text>
+  <text x="750" y="120" fill="white" font-size="12" text-anchor="end">1</text>
+  <line x1="50" y1="135" x2="750" y2="135" stroke="white" stroke-width="3"/>
+  <circle id="cursor" cx="400" cy="135" r="10" fill="white"/>
+  <text x="400" y="170" fill="white" font-size="16" text-anchor="middle">Normalized Alpha/Beta Ratio</text>
+</svg>
+
+<hr>
+
+<!-- Guardar -->
+<button onclick="saveData()">💾 Guardar datos EEG</button>
+<p id="save-status"></p>
+
+<script>
+  // ── Presets ────────────────────────────────────────────────────────────────
+  const PRESETS = {
+    Dry:       { room_size: 0.0,  dry_level: 1.0, damping: 0.9, width: 1.0, freeze_mode: 0.0 },
+    Room:      { room_size: 0.25, dry_level: 0.8, damping: 0.6, width: 0.7, freeze_mode: 0.0 },
+    Hall:      { room_size: 0.4,  dry_level: 0.7, damping: 0.4, width: 1.0, freeze_mode: 0.0 },
+    Cathedral: { room_size: 0.6,  dry_level: 0.5, damping: 0.1, width: 1.0, freeze_mode: 0.0 },
+    Infinite:  { room_size: 0.8,  dry_level: 0.3, damping: 0.0, width: 1.0, freeze_mode: 1.0 },
+  };
+
+  const SLIDER_IDS = {
+    wet_level:   ["wet-level",   "wet-val"],
+    dry_level:   ["dry-level",   "dry-val"],
+    room_size:   ["room-size",   "room-val"],
+    damping:     ["damping",     "damping-val"],
+    width:       ["width",       "width-val"],
+    freeze_mode: ["freeze-mode", "freeze-val"],
+  };
+
+  function applyPreset(name) {
+    const p = PRESETS[name];
+    for (const [key, val] of Object.entries(p)) {
+      const [sliderId, labelId] = SLIDER_IDS[key];
+      document.getElementById(sliderId).value = val;
+      document.getElementById(labelId).textContent = val.toFixed(2);
+      sendOSC(key, val);
+    }
+  }
+
+  function updateSlider(key, el) {
+    const val = parseFloat(el.value);
+    const [, labelId] = SLIDER_IDS[key];
+    document.getElementById(labelId).textContent = val.toFixed(2);
+    sendOSC(key, val);
+  }
+
+  function sendOSC(key, value) {
+    fetch(`/osc/${key}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ value })
+    });
+  }
+
+  function saveData() {
+    fetch("/save", { method: "POST" })
+      .then(() => {
+        document.getElementById("save-status").textContent = "✅ Datos guardados!";
+        setTimeout(() => document.getElementById("save-status").textContent = "", 3000);
+      });
+  }
+
+  // ── WebSocket EEG ──────────────────────────────────────────────────────────
+  const ws = new WebSocket("ws://127.0.0.1:8000/ws/eeg");
+
+  ws.onmessage = function(event) {
+    const { alpha, beta, ratio } = JSON.parse(event.data);
+
+    // Barra alpha/beta
+    const total    = alpha + beta;
+    const alphaPct = total > 0 ? alpha / total : 0.5;
+    const alphaW   = 700 * alphaPct;
+
+    document.getElementById("bar-alpha").setAttribute("width", alphaW);
+    document.getElementById("bar-beta").setAttribute("x",     50 + alphaW);
+    document.getElementById("bar-beta").setAttribute("width", 700 - alphaW);
+
+    // Cursor ratio
+    const cursorX = 50 + ratio * 700;
+    document.getElementById("cursor").setAttribute("cx", cursorX);
+
+    // Label room size
+    // document.getElementById("eeg-wet-level").textContent = `EEG Wet level: ${ratio.toFixed(3)}`;
+  };
+
+  ws.onerror = function() {
+    console.error("WebSocket error");
+  };
+</script>
+
+</body>
+</html>
