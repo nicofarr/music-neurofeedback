@@ -6,5 +6,7 @@ dist/
 wheels/
 *.egg-info
 
+Serial_class_test.py
+
 # Virtual environments
 .venv
