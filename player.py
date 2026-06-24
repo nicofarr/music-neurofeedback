@@ -33,7 +33,7 @@ params = {
     "dry_level":   0.4,
     "width":       1.0,
     "freeze_mode": 0.0,
-    "volume":      1.0,
+    "crossfade":      1.0,
 }
 
 # ── Audio loading ─────────────────────────────────────────────────────────────
@@ -55,8 +55,8 @@ def load_audio(source):
     return data, sr
 
 # ── Playback ──────────────────────────────────────────────────────────────────
-def play(data, sr):
-    channels  = data.shape[1]
+def play(data_a, data_b, sr):
+    channels  = data_a.shape[1]
     blocksize = 1024
     board     = Pedalboard([Reverb()])
     pos       = [0]
@@ -75,16 +75,30 @@ def play(data, sr):
         board[0].width       = p["width"]
         board[0].freeze_mode = p["freeze_mode"]
 
-        chunk = data[pos[0] : pos[0] + frames]
-        pad   = frames - len(chunk)
-        if pad:
-            chunk = np.pad(chunk, ((0, pad), (0, 0)))
+        #chunk = data[pos[0] : pos[0] + frames]
+        #pad   = frames - len(chunk)
+        #if pad:
+        #    chunk = np.pad(chunk, ((0, pad), (0, 0)))
+        ratio = params["crossfade"]
+        chunk_a = data_a[pos[0] : pos[0] + frames]
+        chunk_b = data_b[pos[0] : pos[0] + frames]
+
+        pad_a = frames - len(chunk_a)
+        pad_b = frames - len(chunk_b)
+        if pad_a:
+            chunk_a = np.pad(chunk_a, ((0, pad_a), (0, 0)))
+        if pad_b:
+            chunk_b = np.pad(chunk_b, ((0, pad_b), (0, 0)))
+
+        chunk = (1 - ratio) * chunk_a + ratio * chunk_b
+        pad = pad_a
+
 
         # KEY FIX: reset=False keeps the reverb tail alive across blocks.
         # Without it pedalboard resets its internal delay lines every call
         # and the wet signal is always zero.
         processed = board(chunk.T, sr, reset=False).T[:frames]
-        processed = processed * p["volume"]
+        processed = processed * p["crossfade"]
         outdata[:] = processed
         pos[0] += frames
 
@@ -143,21 +157,31 @@ def main():
     ap = argparse.ArgumentParser(
         description="WAV/YouTube player with OSC-controlled reverb"
     )
-    ap.add_argument("source",      help="WAV file path or YouTube URL")
+    #ap.add_argument("source",      help="WAV file path or YouTube URL")
+    ap.add_argument("source_a",      help="Background WAV file path or YouTube URL")
+    ap.add_argument("source_b",      help="Music WAV file path or YouTube URL")
+
     ap.add_argument("--osc-port",  type=int, default=9000, metavar="PORT")
     ap.add_argument("--osc-base",  default="/reverb",      metavar="ADDR",
                     help="OSC base address (default: /reverb)")
     args = ap.parse_args()
 
-    print(f"Loading {args.source} …")
-    data, sr = load_audio(args.source)
-    print(f"  {data.shape[0] / sr:.1f}s | {sr} Hz | {data.shape[1]}ch")
+    #print(f"Loading {args.source} …")
+    #data, sr = load_audio(args.source)
+    #print(f"  {data.shape[0] / sr:.1f}s | {sr} Hz | {data.shape[1]}ch")
+
+    print(f"Loading {args.source_a} …")
+    data_a, sr_a = load_audio(args.source_a)
+    print(f"  {data_a.shape[0] / sr_a:.1f}s | {sr_a} Hz | {data_a.shape[1]}ch")
+    print(f"Loading {args.source_b} …")
+    data_b, sr_b = load_audio(args.source_b)
+    print(f"  {data_b.shape[0] / sr_b:.1f}s | {sr_b} Hz | {data_b.shape[1]}ch")
 
     osc = start_osc(args.osc_port, args.osc_base)
 
     print("\nPlaying — move sliders in control.py to shape the reverb (Ctrl+C to quit)")
     try:
-        play(data, sr)
+        play(data_a, data_b, sr_a)
     except KeyboardInterrupt:
         pass
     print("\nDone.")

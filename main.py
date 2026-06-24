@@ -11,7 +11,7 @@ from EEG import EEG_signal_processing
 
 # ── EEG ───────────────────────────────────────────────────────────────────────
 signal = EEG_signal_processing()
-signal.start()
+# signal.start()
 
 HOST = "127.0.0.1"
 PORT = 9000
@@ -60,12 +60,25 @@ from fastapi import Body
 
 @app.post("/osc/{key}")
 def osc_send(key: str, value: float = Body(..., embed=True)):
-    send(key, value)
+    if key == "smoothing":
+        signal.smoothing = float(value)
+    else:
+        send(key, value)
     return {"ok": True}
 
 @app.post("/save")
 def save():
     signal.save_data()
+    return {"ok": True}
+
+@app.post("/start")
+def start():
+    signal.start()
+    return {"ok": True}
+
+@app.post("/stop")
+def stop():
+    signal.stop()
     return {"ok": True}
 
 # ── Run ───────────────────────────────────────────────────────────────────────

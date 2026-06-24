@@ -18,7 +18,7 @@ FS = 250
 TIME_WINDOW = 5
 SAMPLES = FS * TIME_WINDOW
 ACTIVE_CHANELS = 6
-STEP_TIME = 8 / 250
+STEP_TIME = 8 / 250 # 32 ms
 
 RELAX_SECONDS = 30
 RELAX_SIZE = int(RELAX_SECONDS / STEP_TIME)
@@ -32,6 +32,7 @@ class EEG_signal_processing:
         self.ratio = 0
         self.n_ratio = 0
         self.smoothed_ratio = 0.5
+        self.smoothing = 1
         
         self.osc = SimpleUDPClient("127.0.0.1", 9000)
         
@@ -39,6 +40,9 @@ class EEG_signal_processing:
         
         self.serial_flux = serial_class(buffer=True, buffer_window = TIME_WINDOW)
         self.serial_flux.init_port()
+
+        serial_thread = threading.Thread(target=self.serial_flux.reception, daemon=True)
+        serial_thread.start()
         
         self.ref_buffer = deque(maxlen=RELAX_SIZE)
         self.data = []
@@ -49,12 +53,14 @@ class EEG_signal_processing:
         self.ref_ready = False
         self.ref_buffer.clear()
         
-        serial_thread = threading.Thread(target=self.serial_flux.reception, daemon=True)
-        serial_thread.start()
         self.running = True
-        
         fft_thread = threading.Thread(target=self.processing_loop, daemon=True)
         fft_thread.start()
+
+    def stop(self):
+        
+        self.running = False
+        self.osc.send_message("/reverb/crossfade", 1.0)
         
     def processing_loop(self):
         
@@ -103,14 +109,11 @@ class EEG_signal_processing:
                 #print(self.n_ratio)
                 
                 # EMA smoothing
-                alpha = 0.1
-                
-                self.smoothed_ratio = (alpha * self.n_ratio + (1 - alpha) * self.smoothed_ratio)
-                self.osc.send_message("/reverb/volume", float(self.smoothed_ratio))
+                self.smoothed_ratio = (self.smoothing * self.n_ratio + (1 - self.smoothing) * self.smoothed_ratio)
+                self.osc.send_message("/reverb/crossfade", float(self.smoothed_ratio))
                 self.data.append([self.alpha, self.beta, z_ratio, self.smoothed_ratio])
                 #print(self.smoothed_ratio)
 
-                
             time.sleep(STEP_TIME)
         
     def save_data(self):

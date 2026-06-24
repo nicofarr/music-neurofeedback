@@ -30,6 +30,7 @@ pip install yt-dlp          # or: brew install yt-dlp
 python player.py audio.wav
 python player.py audio.wav --osc-port 9000 --osc-base /reverb
 python player.py "https://youtu.be/dQw4w9WgXcQ"
+python player.py "https://www.youtube.com/watch?v=rlqPmySO9Sg" "https://www.youtube.com/watch?v=BCxTQq0UiFs"
 ```
 
 **Terminal 2 — start the controller:**

@@ -79,6 +79,10 @@
 
 <hr>
 
+<label>Smoothing — <span id="smoothing-val">1.00</span></label>
+<input type="range" min="0" max="1" step="0.1" value="1.00" id="smoothing"
+       oninput="updateSlider('smoothing', this)">
+
 <!-- EEG Monitor -->
 <h3>EEG Monitor</h3>
 <svg id="eeg-svg" width="100%" viewBox="0 0 800 200" xmlns="http://www.w3.org/2000/svg">
@@ -97,9 +101,11 @@
 
 <hr>
 
-<!-- Guardar -->
-<button onclick="saveData()">💾 Save EEG data</button>
-<p id="save-status"></p>
+<div class="buttons">
+  <button onclick="startExperiment()">Start</button>
+  <button onclick="stopExperiment()">Stop</button>
+  <button onclick="saveData()">💾 Save EEG data</button><p id="save-status"></p>
+<div>
 
 <script>
   // ── Presets ────────────────────────────────────────────────────────────────
@@ -118,6 +124,7 @@
     damping:     ["damping",     "damping-val"],
     width:       ["width",       "width-val"],
     freeze_mode: ["freeze-mode", "freeze-val"],
+    smoothing:   ["smoothing",   "smoothing-val"],
   };
 
   function applyPreset(name) {
@@ -151,6 +158,14 @@
         document.getElementById("save-status").textContent = "✅ Datos guardados!";
         setTimeout(() => document.getElementById("save-status").textContent = "", 3000);
       });
+  }
+
+  function startExperiment() {
+    fetch("/start", { method: "POST" })
+  }
+
+  function stopExperiment() {
+    fetch("/stop", { method: "POST" })
   }
 
   // ── WebSocket EEG ──────────────────────────────────────────────────────────
