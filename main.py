@@ -1,5 +1,7 @@
 import asyncio
 import webbrowser
+import subprocess
+import sys
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
@@ -16,6 +18,9 @@ signal = EEG_signal_processing()
 HOST = "127.0.0.1"
 PORT = 9000
 BASE = "/reverb"
+
+player_process = None
+player_running = False
 
 def send(key, value):
     try:
@@ -39,6 +44,8 @@ def index():
 # ── WebSocket EEG ─────────────────────────────────────────────────────────────
 @app.websocket("/ws/eeg")
 async def eeg_ws(websocket: WebSocket):
+    global player_running
+    
     await websocket.accept()
     try:
         while True:
@@ -50,6 +57,8 @@ async def eeg_ws(websocket: WebSocket):
                 "alpha": alpha,
                 "beta":  beta,
                 "ratio": ratio,
+                "ref_ready": signal.ref_ready,
+                "player_running": player_process is not None and player_process.poll() is None,
             })
             await asyncio.sleep(0.5)
     except WebSocketDisconnect:
@@ -79,6 +88,24 @@ def start():
 @app.post("/stop")
 def stop():
     signal.stop()
+    return {"ok": True}
+
+# ── OSC endpoints ──────────────────────────────────────────────────────────────────
+@app.post("/player/start")
+def player_start(source_a: str = Body(..., embed=True), source_b: str = Body(..., embed=True)):
+    global player_process
+    if player_process and player_process.poll() is None:
+        player_process.kill()  
+    player_process = subprocess.Popen([sys.executable, "player.py", source_a, source_b])
+    player_running = True
+    return {"ok": True}
+
+@app.post("/player/stop")
+def player_stop():
+    global player_process
+    if player_process and player_process.poll() is None:
+        player_process.kill()
+    player_running = False
     return {"ok": True}
 
 # ── Run ───────────────────────────────────────────────────────────────────────

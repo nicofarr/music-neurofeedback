@@ -37,6 +37,7 @@ class EEG_signal_processing:
         self.osc = SimpleUDPClient("127.0.0.1", 9000)
         
         self.running = False
+        self.ref_ready = False
         
         self.serial_flux = serial_class(buffer=True, buffer_window = TIME_WINDOW)
         self.serial_flux.init_port()

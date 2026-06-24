@@ -98,7 +98,6 @@ def play(data_a, data_b, sr):
         # Without it pedalboard resets its internal delay lines every call
         # and the wet signal is always zero.
         processed = board(chunk.T, sr, reset=False).T[:frames]
-        processed = processed * p["crossfade"]
         outdata[:] = processed
         pos[0] += frames
 
@@ -173,9 +172,12 @@ def main():
     print(f"Loading {args.source_a} …")
     data_a, sr_a = load_audio(args.source_a)
     print(f"  {data_a.shape[0] / sr_a:.1f}s | {sr_a} Hz | {data_a.shape[1]}ch")
+    print(f"RMS source_a: {np.sqrt(np.mean(data_a**2)):.4f}")
+
     print(f"Loading {args.source_b} …")
     data_b, sr_b = load_audio(args.source_b)
     print(f"  {data_b.shape[0] / sr_b:.1f}s | {sr_b} Hz | {data_b.shape[1]}ch")
+    print(f"RMS source_b: {np.sqrt(np.mean(data_b**2)):.4f}")
 
     osc = start_osc(args.osc_port, args.osc_base)
 

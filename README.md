@@ -7,7 +7,7 @@ Real-time audio player with a live reverb effect controllable via OSC. Feed it a
 | File | Purpose |
 |---|---|
 | `player.py` | Plays audio, listens for OSC, applies reverb |
-| `main.py` | Sliders send OSC to the player, graphs of EEG signal |
+| `main.py` | Sliders send OSC to the player, controls player and shows graphs of EEG signal |
 
 ## Install
 With uv 
@@ -25,20 +25,25 @@ pip install yt-dlp          # or: brew install yt-dlp
 
 ## Usage
 
-**Terminal 1 — start the player:**
+**Download audio files (optional but recommended):**
 ```bash
-python player.py audio.wav
-python player.py audio.wav --osc-port 9000 --osc-base /reverb
-python player.py "https://youtu.be/dQw4w9WgXcQ"
-python player.py "https://www.youtube.com/watch?v=rlqPmySO9Sg" "https://www.youtube.com/watch?v=BCxTQq0UiFs"
+yt-dlp -x --audio-format wav -o "noise.wav" "https://www.youtube.com/..."
+yt-dlp -x --audio-format wav -o "music.wav" "https://www.youtube.com/..."
 ```
 
-**Terminal 2 — start the controller:**
+**Start the controller:**
 ```bash
 python main.py
 ```
 
-URL is opened by program (default `http://localhost:8501`), move the sliders to adjust reverb. Changes take effect within the next audio block (~23 ms).
+The browser opens automatically at `http://localhost:8000`. From the web interface you can:
+- Enter paths to the audio files (or YouTube URLs) and click **Play** to start the player
+- Use the reverb sliders to adjust the audio parameters manually
+- Click **Start** to begin the EEG experiment — the system will calculate a baseline reference (calculated independently in each experiment). Crossfade between the two audio sources is controlled in real time based on the alpha/beta power ratio
+- Click **Stop** to end the experiment and **Save** to export the recorded EEG data
+- Click **Stop player** to stop audio playback
+
+Changes to reverb parameters take effect within the next audio block (~23 ms).
 
 ## OSC API
 
