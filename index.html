@@ -39,7 +39,7 @@
   </div>
 </div>
 <br>
-<button onclick="playerStart()">▶ Play</button>
+<button onclick="togglePlayer()" id="play-btn">▶ Play</button>
 <button onclick="playerStop()">⏹ Stop</button>
 <span id="player-status" style="margin-left:12px; font-size:13px;"></span>
 
@@ -104,6 +104,7 @@
 <div class="buttons">
   <button onclick="startExperiment()">▶ Start</button>
   <button onclick="stopExperiment()">⏹ Stop</button>
+  <button onclick="toggleBaseline()" id="baseline-btn">Fixed baseline</button>
   <button onclick="saveData()">💾 Save EEG data</button><p id="save-status"></p>
   <span id="ref-status" style="margin-left:12px; font-size:13px;"></span>
 <div>
@@ -192,6 +193,17 @@
     fetch("/stop", { method: "POST" })
   }
 
+  let movingBaseline = false;
+  function  toggleBaseline() {
+    movingBaseline = !movingBaseline;
+    fetch("/baseline", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ moving: movingBaseline })
+    });
+    document.getElementById("baseline-btn").textContent = movingBaseline ? "Moving baseline" : "Fixed baseline";
+  }
+
   function playerStart() {
     const source_a = document.getElementById("source-a").value;
     const source_b = document.getElementById("source-b").value;
@@ -204,6 +216,30 @@
 
   function playerStop() {
       fetch("/player/stop", { method: "POST" });
+      playerStarted = false;
+      paused = false;
+  }
+
+  let playerStarted = false;
+  let paused = false;
+
+  function togglePlayer() {
+    const btn = document.getElementById("play-btn");
+    
+    if (!playerStarted) {
+      playerStart();
+      playerStarted = true;
+      paused = false;
+      btn.textContent = "⏸ Pause";
+    } else if (!paused) {
+      fetch("/player/pause", { method: "POST" });
+      paused = true;
+      btn.textContent = "▶ Resume";
+    } else {
+      fetch("/player/resume", { method: "POST" });
+      paused = false;
+      btn.textContent = "⏸ Pause";
+    }
   }
 
   // ── WebSocket EEG ──────────────────────────────────────────────────────────

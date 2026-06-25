@@ -34,6 +34,7 @@ params = {
     "width":       1.0,
     "freeze_mode": 0.0,
     "crossfade":      1.0,
+    "paused":          0.0,
 }
 
 # ── Audio loading ─────────────────────────────────────────────────────────────
@@ -79,14 +80,21 @@ def play(data_a, data_b, sr):
         #pad   = frames - len(chunk)
         #if pad:
         #    chunk = np.pad(chunk, ((0, pad), (0, 0)))
+        
+        if params["paused"] > 0.5:
+            outdata[:] = np.zeros_like(outdata)
+            return
+        
         ratio = params["crossfade"]
-        chunk_a = data_a[pos[0] : pos[0] + frames]
-        chunk_b = data_b[pos[0] : pos[0] + frames]
 
-        pad_a = frames - len(chunk_a)
+        pos_a = pos[0] % len(data_a)
+        chunk_a = data_a[pos_a : pos_a + frames]
+
+        chunk_b = data_b[pos[0] : pos[0] + frames]
         pad_b = frames - len(chunk_b)
-        if pad_a:
-            chunk_a = np.pad(chunk_a, ((0, pad_a), (0, 0)))
+
+        if len(chunk_a) < frames:
+            chunk_a = np.concatenate([chunk_a, data_a[:frames - len(chunk_a)]])
         if pad_b:
             chunk_b = np.pad(chunk_b, ((0, pad_b), (0, 0)))
 

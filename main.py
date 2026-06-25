@@ -58,7 +58,7 @@ async def eeg_ws(websocket: WebSocket):
                 "beta":  beta,
                 "ratio": ratio,
                 "ref_ready": signal.ref_ready,
-                "player_running": player_process is not None and player_process.poll() is None,
+                "player_running": player_process is not None and player_process.poll() is None and player_running,
             })
             await asyncio.sleep(0.5)
     except WebSocketDisconnect:
@@ -90,10 +90,15 @@ def stop():
     signal.stop()
     return {"ok": True}
 
+@app.post("/baseline")
+def set_baseline(moving: bool = Body(..., embed=True)):
+    signal.moving_baseline = moving
+    return {"ok": True}
+
 # ── OSC endpoints ──────────────────────────────────────────────────────────────────
 @app.post("/player/start")
 def player_start(source_a: str = Body(..., embed=True), source_b: str = Body(..., embed=True)):
-    global player_process
+    global player_process, player_running
     if player_process and player_process.poll() is None:
         player_process.kill()  
     player_process = subprocess.Popen([sys.executable, "player.py", source_a, source_b])
@@ -102,10 +107,24 @@ def player_start(source_a: str = Body(..., embed=True), source_b: str = Body(...
 
 @app.post("/player/stop")
 def player_stop():
-    global player_process
+    global player_process, player_running
     if player_process and player_process.poll() is None:
         player_process.kill()
     player_running = False
+    return {"ok": True}
+
+@app.post("/player/pause")
+def player_pause():
+    global player_running
+    player_running = False
+    send("paused", 1.0)
+    return {"ok": True}
+
+@app.post("/player/resume")
+def player_resume():
+    global player_running
+    player_running = True
+    send("paused", 0.0)
     return {"ok": True}
 
 # ── Run ───────────────────────────────────────────────────────────────────────

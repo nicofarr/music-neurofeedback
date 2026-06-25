@@ -38,6 +38,7 @@ class EEG_signal_processing:
         
         self.running = False
         self.ref_ready = False
+        self.moving_baseline = False
         
         self.serial_flux = serial_class(buffer=True, buffer_window = TIME_WINDOW)
         self.serial_flux.init_port()
@@ -105,6 +106,12 @@ class EEG_signal_processing:
                           f"Dev: {r_std} |"
                     )
             else:
+                if self.moving_baseline:
+                    self.ref_buffer.append(self.ratio)
+                    ref = np.array(self.ref_buffer)
+                    r_mean = np.mean(ref)
+                    r_std = np.std(ref)
+
                 z_ratio = (self.ratio - r_mean) / (r_std + 1e-12)
                 self.n_ratio = np.clip((z_ratio + 2)/4, 0, 1)
                 #print(self.n_ratio)
