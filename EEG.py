@@ -82,6 +82,7 @@ class EEG_signal_processing:
             X = X * hann_win[:, None]
             
             FFT = np.fft.rfft(X, axis=0)
+            self.eeg_amplitudes = np.abs(X).mean(axis=0) / 1000.0
             power = np.abs(FFT) ** 2
             
             alpha_power = power[alpha_mask].mean()

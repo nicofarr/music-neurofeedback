@@ -59,6 +59,7 @@ async def eeg_ws(websocket: WebSocket):
                 "ratio": ratio,
                 "ref_ready": signal.ref_ready,
                 "player_running": player_process is not None and player_process.poll() is None and player_running,
+                "eeg_amplitudes": signal.eeg_amplitudes.tolist() if hasattr(signal, 'eeg_amplitudes') else [0]*6,
             })
             await asyncio.sleep(0.5)
     except WebSocketDisconnect:

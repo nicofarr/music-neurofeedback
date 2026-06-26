@@ -109,6 +109,26 @@
   <span id="ref-status" style="margin-left:12px; font-size:13px;"></span>
 <div>
 
+<h3>Electrode amplitudes</h3>
+<table style="border-collapse:collapse; font-size:13px; width:100%;">
+  <tr>
+    <th style="padding:6px 12px; border:1px solid #444;">P3</th>
+    <th style="padding:6px 12px; border:1px solid #444;">Pz</th>
+    <th style="padding:6px 12px; border:1px solid #444;">P4</th>
+    <th style="padding:6px 12px; border:1px solid #444;">O1</th>
+    <th style="padding:6px 12px; border:1px solid #444;">Oz</th>
+    <th style="padding:6px 12px; border:1px solid #444;">O2</th>
+  </tr>
+  <tr>
+    <td id="amp-0" style="padding:6px 12px; border:1px solid #444; text-align:center;">—</td>
+    <td id="amp-1" style="padding:6px 12px; border:1px solid #444; text-align:center;">—</td>
+    <td id="amp-2" style="padding:6px 12px; border:1px solid #444; text-align:center;">—</td>
+    <td id="amp-3" style="padding:6px 12px; border:1px solid #444; text-align:center;">—</td>
+    <td id="amp-4" style="padding:6px 12px; border:1px solid #444; text-align:center;">—</td>
+    <td id="amp-5" style="padding:6px 12px; border:1px solid #444; text-align:center;">—</td>
+  </tr>
+</table>
+
 <br>
 <label>Smoothing — <span id="smoothing-val">1.00</span></label>
 <input type="range" min="0" max="1" step="0.1" value="1.00" id="smoothing"
@@ -246,7 +266,7 @@
   const ws = new WebSocket("ws://127.0.0.1:8000/ws/eeg");
 
   ws.onmessage = function(event) {
-    const { alpha, beta, ratio, ref_ready, player_running } = JSON.parse(event.data);
+    const { alpha, beta, ratio, ref_ready, player_running, eeg_amplitudes } = JSON.parse(event.data);
 
     // Barra alpha/beta
     const total    = alpha + beta;
@@ -260,6 +280,12 @@
     // Cursor ratio
     const cursorX = 50 + ratio * 700;
     document.getElementById("cursor").setAttribute("cx", cursorX);
+
+    // EEG amplitudes
+    const sensors = ["P3", "Pz", "P4", "O1", "Oz", "O2"];
+    eeg_amplitudes.forEach((amp, i) => {
+        document.getElementById(`amp-${i}`).textContent = amp.toFixed(1);
+    });
 
     const playerStatus = document.getElementById("player-status");
     if (player_running) {
